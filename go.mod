@@ -1,6 +1,7 @@
 module github.com/Ethernal-Tech/ethgo
 
 go 1.21
+toolchain go1.22.5
 
 require (
 	github.com/btcsuite/btcd v0.24.2
@@ -16,7 +17,7 @@ require (
 	github.com/umbracle/fastrlp v0.1.0
 	github.com/valyala/fasthttp v1.55.0
 	github.com/valyala/fastjson v1.6.4
-	go.etcd.io/bbolt v1.3.10
+	go.etcd.io/bbolt v1.3.11
 	golang.org/x/crypto v0.26.0
 	golang.org/x/text v0.17.0
 	pgregory.net/rapid v1.1.0
