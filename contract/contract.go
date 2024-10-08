@@ -343,7 +343,7 @@ func (a *Contract) Call(methodName string, block ethgo.BlockNumber, args ...inte
 		return nil, fmt.Errorf("method %s not found", methodName)
 	}
 
-	rawOutput, err := a.CallInternal(m, block, args)
+	rawOutput, err := a.CallInternal(m, block, args...)
 	if err != nil {
 		return nil, err
 	}
