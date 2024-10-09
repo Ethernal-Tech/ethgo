@@ -368,3 +368,17 @@ func (a *Contract) CallInternal(m *abi.Method, block ethgo.BlockNumber, args ...
 
 	return a.provider.Call(a.addr, data, opts)
 }
+
+func (a *Contract) CallWithDecode(methodName string, block ethgo.BlockNumber, codec *abi.ABIEncoder, args ...interface{}) error {
+	m := a.abi.GetMethod(methodName)
+	if m == nil {
+		return fmt.Errorf("method %s not found", methodName)
+	}
+
+	rawOutput, err := a.CallInternal(m, block, args...)
+	if err != nil {
+		return err
+	}
+
+	return (*codec).DecodeAbi(rawOutput)
+}
