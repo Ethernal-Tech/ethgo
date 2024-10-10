@@ -352,9 +352,8 @@ func encodeHex(b []byte) string {
 }
 
 func decodeHex(str string) ([]byte, error) {
-	if strings.HasPrefix(str, "0x") {
-		str = str[2:]
-	}
+	str = strings.TrimPrefix(str, "0x")
+
 	buf, err := hex.DecodeString(str)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode hex: %v", err)

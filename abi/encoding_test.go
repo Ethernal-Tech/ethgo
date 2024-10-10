@@ -645,7 +645,7 @@ func testDecodePanic(tt *Type, input interface{}) error {
 		copy(buf, res1)
 		buf[i] = 0xff
 
-		Decode(tt, buf)
+		_, _ = Decode(tt, buf)
 	}
 
 	return nil

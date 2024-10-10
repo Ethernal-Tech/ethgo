@@ -8,7 +8,8 @@ import (
 
 func TestDecode_BytesBound(t *testing.T) {
 	typ := MustNewType("tuple(string)")
-	decodeTuple(typ, nil) // it should not panic
+	_, _, err := decodeTuple(typ, nil)
+	require.ErrorContains(t, err, "incorrect length")
 }
 
 func TestDecode_DynamicLengthOutOfBounds(t *testing.T) {
