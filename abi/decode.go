@@ -24,11 +24,6 @@ func Decode(t *Type, input []byte) (interface{}, error) {
 	return val, err
 }
 
-// DecodeWithCustomEncoder decodes the raw byte array into ABIEncoder implementation
-func DecodeWithCustomEncoder(rawValues []byte, encoder ABIEncoder) error {
-	return encoder.DecodeAbi(rawValues)
-}
-
 // DecodeStruct decodes the input with a type to a struct
 func DecodeStruct(t *Type, input []byte, out interface{}) error {
 	val, err := Decode(t, input)
