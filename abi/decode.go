@@ -74,7 +74,7 @@ func decode(t *Type, input []byte) (interface{}, []byte, error) {
 		return decodeTuple(t, input)
 
 	case KindSlice:
-		return decodeArraySlice(t, input[32:], length)
+		return decodeArraySlice(t, input[storageSlotSize:], length)
 
 	case KindArray:
 		return decodeArraySlice(t, input, t.size)
