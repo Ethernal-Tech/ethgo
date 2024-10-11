@@ -1,7 +1,9 @@
 package contract
 
 import (
+	"bytes"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -222,6 +224,114 @@ func TestContract_CallAtBlock(t *testing.T) {
 		// value at previous block is 1
 		checkVal(ethgo.BlockNumber(receipt.BlockNumber-1), big.NewInt(1))
 	}
+}
+
+func TestContract_TestEncodingABIBytes(t *testing.T) {
+	s := testutil.NewTestServer(t)
+
+	// create an address and fund it
+	key, _ := wallet.GenerateKey()
+	s.Fund(key.Address())
+
+	cc := &testutil.Contract{}
+	cc.AddCallback(func() string {
+		return `
+			struct Test1 {
+				uint256 test;
+			}
+
+			struct Test2 {
+				uint256[] test;
+			}
+
+			struct Test3 {
+				uint256 num;
+				uint256[] test;
+			}
+			
+			Test1 test1;
+			Test2 test2;
+			Test3 test3;
+
+			function setTest1() public payable {
+				test1.test = 1;
+			}
+
+			function setTest2() public payable {
+				test2.test.push(1);
+			}
+
+			function setTest3() public payable {
+				test3.num = 1;
+				test3.test.push(1);
+			}
+
+			function getTest1() public view returns (Test1 memory) {
+				return test1;
+			}
+
+			function getTest2() public view returns (Test2 memory) {
+				return test2;
+			}
+
+			function getTest3() public view returns (Test3 memory) {
+				return test3;
+			}
+		`
+	})
+
+	artifact, addr, err := s.DeployContract(cc)
+	require.NoError(t, err)
+
+	abi, err := abi.NewABI(artifact.Abi)
+	assert.NoError(t, err)
+
+	contract := NewContract(addr, abi, WithJsonRPCEndpoint(s.HTTPAddr()), WithSender(key))
+
+	set := func(id int) {
+		txn, err := contract.Txn(fmt.Sprintf("setTest%d", id))
+		assert.NoError(t, err)
+
+		err = txn.Do()
+		assert.NoError(t, err)
+
+		_, err = txn.Wait()
+		assert.NoError(t, err)
+	}
+
+	for i := 1; i <= 3; i++ {
+		set(i)
+	}
+
+	checkVal := func(id int, expect []byte) {
+		method := contract.abi.GetMethod(fmt.Sprintf("getTest%d", id))
+		resp, err := contract.CallInternal(method, ethgo.Latest, id)
+		assert.NoError(t, err)
+
+		assert.Equal(t, resp, expect)
+	}
+
+	zeroBytes31 := bytes.Repeat([]byte{0}, 31)
+
+	// tuple with only static value
+	expectedValuesTest1 := append(zeroBytes31, 1) // value of num in tuple
+
+	// tuple with only dynamic value
+	expectedValuesTest2 := append(zeroBytes31, 32)                                // tuple offset because it has a dynamic value
+	expectedValuesTest2 = append(expectedValuesTest2, append(zeroBytes31, 32)...) // slice offset
+	expectedValuesTest2 = append(expectedValuesTest2, append(zeroBytes31, 1)...)  // slice length
+	expectedValuesTest2 = append(expectedValuesTest2, append(zeroBytes31, 1)...)  // slice value
+
+	// tuple with both static and dynamic values
+	expectedValuesTest3 := append(zeroBytes31, 32)                                // tuple offset because it has a dynamic value
+	expectedValuesTest3 = append(expectedValuesTest3, append(zeroBytes31, 1)...)  // value of num in tuple
+	expectedValuesTest3 = append(expectedValuesTest3, append(zeroBytes31, 64)...) // slice offset
+	expectedValuesTest3 = append(expectedValuesTest3, append(zeroBytes31, 1)...)  // slice length
+	expectedValuesTest3 = append(expectedValuesTest3, append(zeroBytes31, 1)...)  // slice value
+
+	checkVal(1, expectedValuesTest1)
+	checkVal(2, expectedValuesTest2)
+	checkVal(3, expectedValuesTest3)
 }
 
 func TestContract_SendValueContractCall(t *testing.T) {
