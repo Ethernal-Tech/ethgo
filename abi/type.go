@@ -99,12 +99,13 @@ type TupleElem struct {
 
 // Type is an ABI type
 type Type struct {
-	kind  Kind
-	size  int
-	elem  *Type
-	tuple []*TupleElem
-	t     reflect.Type
-	itype string
+	kind        Kind
+	size        int
+	elem        *Type
+	tuple       []*TupleElem
+	t           reflect.Type
+	itype       string
+	isRootTuple bool
 }
 
 func NewTupleType(inputs []*TupleElem) *Type {

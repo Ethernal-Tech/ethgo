@@ -15,11 +15,15 @@ const (
 	storageSlotSize = 32
 )
 
-// Decode decodes the input with a given type
+// Decode decodes the input with a given type“
 func Decode(t *Type, input []byte) (interface{}, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
+	if t.kind == KindTuple {
+		t.isRootTuple = true
+	}
+
 	val, _, err := decode(t, input)
 	return val, err
 }
@@ -66,6 +70,14 @@ func decode(t *Type, input []byte) (interface{}, []byte, error) {
 
 	switch t.kind {
 	case KindTuple:
+		if t.isRootTuple && t.isDynamicType() {
+			offset, err := readOffset(input, len(input))
+			if err != nil {
+				return nil, nil, err
+			}
+			return decodeTuple(t, input[offset:])
+		}
+
 		return decodeTuple(t, input)
 
 	case KindSlice:
