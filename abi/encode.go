@@ -18,8 +18,8 @@ var (
 )
 
 // Encode encodes a value
-func Encode(v interface{}, t *Type) ([]byte, error) {
-	if t.kind == KindTuple {
+func Encode(v interface{}, t *Type, isFunctionArgument ...bool) ([]byte, error) {
+	if t.kind == KindTuple && len(isFunctionArgument) == 0 {
 		t.isRootTuple = true
 	}
 

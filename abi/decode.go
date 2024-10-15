@@ -16,11 +16,11 @@ const (
 )
 
 // Decode decodes the input with a given type“
-func Decode(t *Type, input []byte) (interface{}, error) {
+func Decode(t *Type, input []byte, isFunctionArgument ...any) (interface{}, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
-	if t.kind == KindTuple {
+	if t.kind == KindTuple && len(isFunctionArgument) == 0 {
 		t.isRootTuple = true
 	}
 

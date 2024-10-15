@@ -216,7 +216,7 @@ func (m *Method) ID() []byte {
 
 // Encode encodes the inputs with this function
 func (m *Method) Encode(args interface{}) ([]byte, error) {
-	data, err := Encode(args, m.Inputs)
+	data, err := Encode(args, m.Inputs, true)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +229,7 @@ func (m *Method) Decode(data []byte) (map[string]interface{}, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("empty response")
 	}
-	respInterface, err := Decode(m.Outputs, data)
+	respInterface, err := Decode(m.Outputs, data, true)
 	if err != nil {
 		return nil, err
 	}
