@@ -14,6 +14,7 @@ import (
 	"github.com/Ethernal-Tech/ethgo"
 	"github.com/Ethernal-Tech/ethgo/compiler"
 	"github.com/Ethernal-Tech/ethgo/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
 func mustDecodeHex(str string) []byte {
@@ -666,7 +667,7 @@ func testTypeWithContract(t *testing.T, server *testutil.TestServer, typ *Type) 
 		return fmt.Errorf("Expected the contract to be called Sample")
 	}
 
-	abi, err := NewABI(string(solcContract.Abi))
+	abi, err := NewABIFromSlice(solcContract.Abi)
 	if err != nil {
 		return err
 	}
@@ -759,4 +760,72 @@ func TestEncodingStruct_camcelCase(t *testing.T) {
 	if !reflect.DeepEqual(obj, obj2) {
 		t.Fatal("bad")
 	}
+}
+
+func TestEncodingStruct_dynamicTuple(t *testing.T) {
+	typ := MustNewType("tuple(address aa, uint32[] b)")
+
+	type Obj struct {
+		A ethgo.Address `abi:"aa"`
+		B []uint32
+	}
+	obj := Obj{
+		A: ethgo.Address{0x1},
+		B: []uint32{1, 2},
+	}
+
+	encoded, err := typ.Encode(&obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var obj2 Obj
+	if err := typ.DecodeStruct(encoded, &obj2); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(obj, obj2) {
+		t.Fatal("bad")
+	}
+
+	g := &generateContractImpl{}
+	source := g.run(typ)
+
+	output, err := compiler.NewSolidityCompiler("solc").CompileCode(source)
+	assert.NoError(t, err)
+
+	solcContract, ok := output.Contracts["<stdin>:Sample"]
+	assert.True(t, ok)
+
+	abi, err := NewABIFromSlice(solcContract.Abi)
+	assert.NoError(t, err)
+
+	binBuf, err := hex.DecodeString(solcContract.Bin)
+	assert.NoError(t, err)
+
+	txn := &ethgo.Transaction{
+		Input: binBuf,
+	}
+
+	server := testutil.NewTestServer(t)
+	receipt, err := server.SendTxn(txn)
+	assert.NoError(t, err)
+
+	method, ok := abi.Methods["set"]
+	assert.True(t, ok)
+
+	encoded, err = typ.Encode(obj)
+	assert.NoError(t, err)
+
+	data := append(method.ID(), encoded...)
+
+	res, err := server.Call(&ethgo.CallMsg{
+		To:   &receipt.ContractAddress,
+		Data: data,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, encodeHex(data[4:]), res)
+
+	err = typ.DecodeStruct(data[4:], &obj2)
+	assert.NoError(t, err)
+	assert.Equal(t, obj, obj2)
 }

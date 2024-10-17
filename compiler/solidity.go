@@ -23,8 +23,26 @@ type Source struct {
 	AST map[string]interface{}
 }
 
+type IOField struct {
+	Name         string    `json:"name"`
+	Type         string    `json:"type"`
+	Indexed      bool      `json:"indexed"`
+	Components   []IOField `json:"components"`
+	InternalType string    `json:"internalType"`
+}
+
+type AbiField struct {
+	Type            string    `json:"type"`
+	Name            string    `json:"name"`
+	Inputs          []IOField `json:"inputs"`
+	Outputs         []IOField `json:"outputs"`
+	StateMutability string    `json:"stateMutability"`
+	Anonymous       bool      `json:"anonymous"`
+	Constant        bool      `json:"constant"`
+}
+
 type Artifact struct {
-	Abi           string
+	Abi           []AbiField `json:"abi"`
 	Bin           string
 	BinRuntime    string `json:"bin-runtime"`
 	SrcMap        string `json:"srcmap"`
@@ -83,7 +101,7 @@ func (s *Solidity) compileImpl(code string, files ...string) (*Output, error) {
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("failed to compile: %s", string(stderr.Bytes()))
+		return nil, fmt.Errorf("failed to compile: %s", stderr.String())
 	}
 
 	var output *Output

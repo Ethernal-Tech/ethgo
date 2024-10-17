@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/Ethernal-Tech/ethgo"
+	"github.com/Ethernal-Tech/ethgo/compiler"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -85,6 +86,94 @@ func overloadedName(rawName string, isAvail func(string) bool) string {
 // NewABI returns a parsed ABI struct
 func NewABI(s string) (*ABI, error) {
 	return NewABIFromReader(bytes.NewReader([]byte(s)))
+}
+
+func toArgStr(args []compiler.IOField) []*ArgumentStr {
+	res := make([]*ArgumentStr, len(args))
+	for i, arg := range args {
+		res[i] = &ArgumentStr{
+			Name:         arg.Name,
+			Type:         arg.Type,
+			Indexed:      arg.Indexed,
+			Components:   toArgStr(arg.Components),
+			InternalType: arg.InternalType,
+		}
+	}
+
+	return res
+}
+
+func NewABIFromSlice(abi []compiler.AbiField) (*ABI, error) {
+	a := &ABI{}
+
+	for _, field := range abi {
+		switch field.Type {
+		case "constructor":
+			if a.Constructor != nil {
+				return nil, fmt.Errorf("multiple constructor declaration")
+			}
+			input, err := NewTupleTypeFromArgs(toArgStr(field.Inputs))
+			if err != nil {
+				panic(err)
+			}
+			a.Constructor = &Method{
+				Inputs: input,
+			}
+
+		case "function", "":
+			c := field.Constant
+			if field.StateMutability == "view" || field.StateMutability == "pure" {
+				c = true
+			}
+
+			inputs, err := NewTupleTypeFromArgs(toArgStr(field.Inputs))
+			if err != nil {
+				panic(err)
+			}
+			outputs, err := NewTupleTypeFromArgs(toArgStr(field.Outputs))
+			if err != nil {
+				panic(err)
+			}
+			method := &Method{
+				Name:    field.Name,
+				Const:   c,
+				Inputs:  inputs,
+				Outputs: outputs,
+			}
+			a.addMethod(method)
+
+		case "event":
+			input, err := NewTupleTypeFromArgs(toArgStr(field.Inputs))
+			if err != nil {
+				panic(err)
+			}
+			event := &Event{
+				Name:      field.Name,
+				Anonymous: field.Anonymous,
+				Inputs:    input,
+			}
+			a.addEvent(event)
+
+		case "error":
+			input, err := NewTupleTypeFromArgs(toArgStr(field.Inputs))
+			if err != nil {
+				panic(err)
+			}
+			errObj := &Error{
+				Name:   field.Name,
+				Inputs: input,
+			}
+			a.addError(errObj)
+
+		case "fallback":
+		case "receive":
+			// do nothing
+
+		default:
+			return nil, fmt.Errorf("unknown field type '%s'", field.Type)
+		}
+	}
+	return a, nil
 }
 
 // MustNewABI returns a parsed ABI contract or panics if fails
