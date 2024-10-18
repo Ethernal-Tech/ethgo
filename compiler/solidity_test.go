@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	_, err := os.Stat(solcDir)
+	_, err := os.Stat(solcPath)
 	if err == nil {
 		// already exists
 		return

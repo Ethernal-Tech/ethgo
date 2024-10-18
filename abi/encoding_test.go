@@ -504,13 +504,13 @@ func TestEncodingBestEffort(t *testing.T) {
 
 func TestEncodingArguments(t *testing.T) {
 	cases := []struct {
-		Arg   *ArgumentStr
+		Arg   *compiler.IOField
 		Input interface{}
 	}{
 		{
-			&ArgumentStr{
+			&compiler.IOField{
 				Type: "tuple",
-				Components: []*ArgumentStr{
+				Components: []*compiler.IOField{
 					{
 						Name: "",
 						Type: "int32",
@@ -527,9 +527,9 @@ func TestEncodingArguments(t *testing.T) {
 			},
 		},
 		{
-			&ArgumentStr{
+			&compiler.IOField{
 				Type: "tuple",
-				Components: []*ArgumentStr{
+				Components: []*compiler.IOField{
 					{
 						Name: "a",
 						Type: "int32",
@@ -551,7 +551,7 @@ func TestEncodingArguments(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run("", func(t *testing.T) {
-			tt, err := NewTypeFromArgument(c.Arg)
+			tt, err := NewTypeFromField(c.Arg)
 			if err != nil {
 				t.Fatal(err)
 			}
