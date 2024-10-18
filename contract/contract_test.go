@@ -28,7 +28,7 @@ func TestContract_NoInput(t *testing.T) {
 	contract, addr, err := s.DeployContract(cc)
 	require.NoError(t, err)
 
-	abi0, err := abi.NewABI(contract.Abi)
+	abi0, err := abi.NewABIFromSlice(contract.Abi)
 	assert.NoError(t, err)
 
 	p, _ := jsonrpc.NewClient(s.HTTPAddr())
@@ -58,7 +58,7 @@ func TestContract_IO(t *testing.T) {
 	contract, addr, err := s.DeployContract(cc)
 	require.NoError(t, err)
 
-	abi, err := abi.NewABI(contract.Abi)
+	abi, err := abi.NewABIFromSlice(contract.Abi)
 	assert.NoError(t, err)
 
 	c := NewContract(addr, abi, WithJsonRPCEndpoint(s.HTTPAddr()))
@@ -83,7 +83,7 @@ func TestContract_From(t *testing.T) {
 	contract, addr, err := s.DeployContract(cc)
 	require.NoError(t, err)
 
-	abi, err := abi.NewABI(contract.Abi)
+	abi, err := abi.NewABIFromSlice(contract.Abi)
 	assert.NoError(t, err)
 
 	from := ethgo.Address{0x1}
@@ -109,7 +109,7 @@ func TestContract_Deploy(t *testing.T) {
 	artifact, err := cc.Compile()
 	assert.NoError(t, err)
 
-	abi, err := abi.NewABI(artifact.Abi)
+	abi, err := abi.NewABIFromSlice(artifact.Abi)
 	assert.NoError(t, err)
 
 	bin, err := hex.DecodeString(artifact.Bin)
@@ -146,7 +146,7 @@ func TestContract_Transaction(t *testing.T) {
 	artifact, addr, err := s.DeployContract(cc)
 	require.NoError(t, err)
 
-	abi, err := abi.NewABI(artifact.Abi)
+	abi, err := abi.NewABIFromSlice(artifact.Abi)
 	assert.NoError(t, err)
 
 	// send multiple transactions
@@ -187,7 +187,7 @@ func TestContract_CallAtBlock(t *testing.T) {
 	artifact, addr, err := s.DeployContract(cc)
 	require.NoError(t, err)
 
-	abi, err := abi.NewABI(artifact.Abi)
+	abi, err := abi.NewABIFromSlice(artifact.Abi)
 	assert.NoError(t, err)
 
 	contract := NewContract(addr, abi, WithJsonRPCEndpoint(s.HTTPAddr()), WithSender(key))
@@ -240,7 +240,7 @@ func TestContract_SendValueContractCall(t *testing.T) {
 	artifact, addr, err := s.DeployContract(cc)
 	require.NoError(t, err)
 
-	abi, err := abi.NewABI(artifact.Abi)
+	abi, err := abi.NewABIFromSlice(artifact.Abi)
 	assert.NoError(t, err)
 
 	contract := NewContract(addr, abi, WithJsonRPCEndpoint(s.HTTPAddr()), WithSender(key))
@@ -275,7 +275,7 @@ func TestContract_EIP1559(t *testing.T) {
 	artifact, addr, err := s.DeployContract(cc)
 	require.NoError(t, err)
 
-	abi, err := abi.NewABI(artifact.Abi)
+	abi, err := abi.NewABIFromSlice(artifact.Abi)
 	assert.NoError(t, err)
 
 	client, _ := jsonrpc.NewClient(s.HTTPAddr())
@@ -298,4 +298,120 @@ func TestContract_EIP1559(t *testing.T) {
 	assert.NotZero(t, txnObj.Gas)
 	assert.NotZero(t, txnObj.MaxFeePerGas)
 	assert.NotZero(t, txnObj.MaxPriorityFeePerGas)
+}
+
+func TestContract_CallFunctionsWithArgs(t *testing.T) {
+	s := testutil.NewTestServer(t)
+
+	cc := &testutil.Contract{}
+	cc.AddCallback(func() string {
+		return `
+			function bar(bytes3[2] memory) public pure {}
+			function baz(uint32 x, bool y) public pure returns (bool r) { r = x > 32 || y; }
+			function sam(bytes memory, bool, uint[] memory) public pure {}
+		`
+	})
+
+	contract, addr, err := s.DeployContract(cc)
+	require.NoError(t, err)
+
+	abi, err := abi.NewABIFromSlice(contract.Abi)
+	assert.NoError(t, err)
+
+	c := NewContract(addr, abi, WithJsonRPCEndpoint(s.HTTPAddr()))
+
+	method := c.GetABI().GetMethod("bar")
+	encoded, err := method.Encode([]interface{}{[2][3]byte{{'a', 'b', 'c'}, {'d', 'e', 'f'}}})
+	assert.NoError(t, err)
+
+	expected, err := hex.DecodeString("fce353f661626300000000000000000000000000000000000000000000000000000000006465660000000000000000000000000000000000000000000000000000000000")
+	assert.NoError(t, err)
+	assert.Equal(t, encoded, expected)
+
+	method = c.GetABI().GetMethod("baz")
+	encoded, err = method.Encode([]interface{}{uint32(69), true})
+	assert.NoError(t, err)
+
+	expected, err = hex.DecodeString("cdcd77c000000000000000000000000000000000000000000000000000000000000000450000000000000000000000000000000000000000000000000000000000000001")
+	assert.NoError(t, err)
+	assert.Equal(t, encoded, expected)
+
+	method = c.GetABI().GetMethod("sam")
+	encoded, err = method.Encode([]interface{}{[]byte("dave"), true, []uint{1, 2, 3}})
+	assert.NoError(t, err)
+
+	expected, err = hex.DecodeString("a5643bf20000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000464617665000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003")
+	assert.NoError(t, err)
+	assert.Equal(t, encoded, expected)
+}
+
+func TestContract_ReturnStruct(t *testing.T) {
+	s := testutil.NewTestServer(t)
+
+	cc := &testutil.Contract{}
+	cc.AddCallback(func() string {
+		return `
+			struct S { uint32 a; uint32 b; }
+			function foo() public pure returns (S memory) {
+				return S(1, 2);
+			}
+
+			struct T { uint32[] a; uint32 b; }
+			function bar() public pure returns (T memory) {
+				uint32[] memory arr = new uint32[](3);
+				arr[0] = 1;
+				arr[1] = 2;
+				arr[2] = 3;
+				return T(arr, 4);
+			}
+
+			function baz(T memory t) public returns (T memory) { return t; }
+		`
+	})
+
+	ss := map[string]interface{}{
+		"a": uint32(1),
+		"b": uint32(2),
+	}
+
+	tt := map[string]interface{}{
+		"a": []uint32{1, 2, 3},
+		"b": uint32(4),
+	}
+
+	contract, addr, err := s.DeployContract(cc)
+	require.NoError(t, err)
+
+	abi, err := abi.NewABIFromSlice(contract.Abi)
+	assert.NoError(t, err)
+
+	c := NewContract(addr, abi, WithJsonRPCEndpoint(s.HTTPAddr()))
+
+	method := c.GetABI().GetMethod("foo")
+	resp, err := c.CallInternal(method, ethgo.Latest)
+	assert.NoError(t, err)
+
+	res, err := method.Decode(resp)
+	assert.NoError(t, err)
+	assert.Equal(t, res["0"], ss)
+
+	method = c.GetABI().GetMethod("bar")
+	resp, err = c.CallInternal(method, ethgo.Latest)
+	assert.NoError(t, err)
+
+	res, err = method.Decode(resp)
+	assert.NoError(t, err)
+	assert.Equal(t, res["0"], tt)
+
+	method = c.GetABI().GetMethod("baz")
+	resp, err = c.CallInternal(method, ethgo.Latest, tt)
+	assert.NoError(t, err)
+
+	encoded, err := method.Encode([]interface{}{tt})
+	assert.NoError(t, err)
+	assert.Equal(t, resp, encoded[4:]) // skip the method id prefix
+
+	res, err = method.Decode(resp)
+	assert.NoError(t, err)
+	assert.Equal(t, res["0"], tt)
 }

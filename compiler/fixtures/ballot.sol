@@ -1,4 +1,5 @@
-pragma solidity >=0.4.22 <0.6.0;
+/* SPDX-License-Identifier: UNLICENSED */
+pragma solidity >=0.4.22 <0.8.29;
 
 /// @title Voting with delegation.
 contract Ballot {
@@ -28,7 +29,7 @@ contract Ballot {
     Proposal[] public proposals;
 
     /// Create a new ballot to choose one of `proposalNames`.
-    constructor(bytes32[] memory proposalNames) public {
+    constructor(bytes32[] memory proposalNames) {
         chairperson = msg.sender;
         voters[chairperson].weight = 1;
 

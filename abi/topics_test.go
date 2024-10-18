@@ -106,7 +106,7 @@ func TestIntegrationTopics(t *testing.T) {
 		require.NoError(t, err)
 
 		// read the abi
-		abi, err := NewABI(artifact.Abi)
+		abi, err := NewABIFromSlice(artifact.Abi)
 		assert.NoError(t, err)
 
 		// parse the logs

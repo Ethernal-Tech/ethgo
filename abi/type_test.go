@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Ethernal-Tech/ethgo/compiler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -11,7 +12,7 @@ import (
 func TestType(t *testing.T) {
 	cases := []struct {
 		s   string
-		a   *ArgumentStr
+		a   *compiler.IOField
 		t   *Type
 		r   string
 		err bool
@@ -111,9 +112,9 @@ func TestType(t *testing.T) {
 		},
 		{
 			s: "tuple(int64 indexed arg0)",
-			a: &ArgumentStr{
+			a: &compiler.IOField{
 				Type: "tuple",
-				Components: []*ArgumentStr{
+				Components: []*compiler.IOField{
 					{
 						Name:    "arg0",
 						Type:    "int64",
@@ -139,9 +140,9 @@ func TestType(t *testing.T) {
 		},
 		{
 			s: "tuple(int64 arg_0)[2]",
-			a: &ArgumentStr{
+			a: &compiler.IOField{
 				Type: "tuple[2]",
-				Components: []*ArgumentStr{
+				Components: []*compiler.IOField{
 					{
 						Name: "arg_0",
 						Type: "int64",
@@ -170,9 +171,9 @@ func TestType(t *testing.T) {
 		},
 		{
 			s: "tuple(int64 a)[]",
-			a: &ArgumentStr{
+			a: &compiler.IOField{
 				Type: "tuple[]",
-				Components: []*ArgumentStr{
+				Components: []*compiler.IOField{
 					{
 						Name: "a",
 						Type: "int64",
@@ -200,9 +201,9 @@ func TestType(t *testing.T) {
 		},
 		{
 			s: "tuple(int32 indexed arg0,tuple(int32 c) b_2)",
-			a: &ArgumentStr{
+			a: &compiler.IOField{
 				Type: "tuple",
-				Components: []*ArgumentStr{
+				Components: []*compiler.IOField{
 					{
 						Name:    "arg0",
 						Type:    "int32",
@@ -211,7 +212,7 @@ func TestType(t *testing.T) {
 					{
 						Name: "b_2",
 						Type: "tuple",
-						Components: []*ArgumentStr{
+						Components: []*compiler.IOField{
 							{
 								Name: "c",
 								Type: "int32",
@@ -255,9 +256,9 @@ func TestType(t *testing.T) {
 		},
 		{
 			s: "tuple()",
-			a: &ArgumentStr{
+			a: &compiler.IOField{
 				Type:       "tuple",
-				Components: []*ArgumentStr{},
+				Components: []*compiler.IOField{},
 			},
 			t: &Type{
 				kind:  KindTuple,
@@ -268,12 +269,12 @@ func TestType(t *testing.T) {
 		{
 			// hidden tuple token
 			s: "tuple((int32))",
-			a: &ArgumentStr{
+			a: &compiler.IOField{
 				Type: "tuple",
-				Components: []*ArgumentStr{
+				Components: []*compiler.IOField{
 					{
 						Type: "tuple",
-						Components: []*ArgumentStr{
+						Components: []*compiler.IOField{
 							{
 								Type: "int32",
 							},
@@ -344,7 +345,7 @@ func TestType(t *testing.T) {
 				}
 				assert.Equal(t, expected, e0.Format(true))
 
-				e1, err := NewTypeFromArgument(c.a)
+				e1, err := NewTypeFromField(c.a)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -365,12 +366,12 @@ func TestType(t *testing.T) {
 }
 
 func TestTypeArgument_InternalFields(t *testing.T) {
-	arg := &ArgumentStr{
+	arg := &compiler.IOField{
 		Type: "tuple",
-		Components: []*ArgumentStr{
+		Components: []*compiler.IOField{
 			{
 				Type: "tuple[]",
-				Components: []*ArgumentStr{
+				Components: []*compiler.IOField{
 					{
 						Type:         "int32",
 						InternalType: "c",
@@ -381,7 +382,7 @@ func TestTypeArgument_InternalFields(t *testing.T) {
 		},
 	}
 
-	res, err := NewTypeFromArgument(arg)
+	res, err := NewTypeFromField(arg)
 	require.NoError(t, err)
 
 	require.Equal(t, res.tuple[0].Elem.itype, "b")
@@ -432,8 +433,8 @@ func TestSize(t *testing.T) {
 	}
 }
 
-func simpleType(s string) *ArgumentStr {
-	return &ArgumentStr{
+func simpleType(s string) *compiler.IOField {
+	return &compiler.IOField{
 		Type: s,
 	}
 }

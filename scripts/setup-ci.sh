@@ -3,7 +3,7 @@
 # set -o errexit
 
 install_solidity() {
-    VERSION="0.5.5"
+    VERSION="0.8.19"
     DOWNLOAD=https://github.com/ethereum/solidity/releases/download/v${VERSION}/solc-static-linux
 
     curl -L $DOWNLOAD > /tmp/solc

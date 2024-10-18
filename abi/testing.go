@@ -191,16 +191,16 @@ func (g *generateContractImpl) run(t *Type) string {
 		body = append(body, fmt.Sprintf("arg%d", indx))
 	}
 
-	contractTemplate := `pragma solidity ^0.5.5;
-pragma experimental ABIEncoderV2;
-
-contract Sample {
-	// structs
-	%s
-	function set(%s) public view returns (%s) {
-		return (%s);
-	}
-}`
+	contractTemplate :=
+		`pragma solidity ^0.8.19;
+	
+	contract Sample {
+		// structs
+		%s
+		function set(%s) public view returns (%s) {
+			return (%s);
+		}
+	}`
 
 	contract := fmt.Sprintf(
 		contractTemplate,
