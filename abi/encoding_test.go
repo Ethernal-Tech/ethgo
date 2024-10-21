@@ -15,6 +15,7 @@ import (
 	"github.com/Ethernal-Tech/ethgo/compiler"
 	"github.com/Ethernal-Tech/ethgo/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func mustDecodeHex(str string) []byte {
@@ -775,14 +776,12 @@ func TestEncodingStruct_dynamicTuple(t *testing.T) {
 	}
 
 	encoded, err := typ.Encode(&obj)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var obj2 Obj
-	if err := typ.DecodeStruct(encoded, &obj2); err != nil {
-		t.Fatal(err)
-	}
+	err = typ.DecodeStruct(encoded, &obj2)
+	require.NoError(t, err)
+
 	if !reflect.DeepEqual(obj, obj2) {
 		t.Fatal("bad")
 	}

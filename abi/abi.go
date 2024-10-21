@@ -88,6 +88,7 @@ func NewABI(s string) (*ABI, error) {
 	return NewABIFromReader(bytes.NewReader([]byte(s)))
 }
 
+// NewABIFromSlice returns a parsed ABI struct from a slice of ABI fields that represent the contract
 func NewABIFromSlice(abi []compiler.AbiField) (*ABI, error) {
 	a := &ABI{}
 
@@ -99,7 +100,7 @@ func NewABIFromSlice(abi []compiler.AbiField) (*ABI, error) {
 			}
 			input, err := NewTupleTypeFromFields(field.Inputs)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			a.Constructor = &Method{
 				Inputs: input,
@@ -113,11 +114,11 @@ func NewABIFromSlice(abi []compiler.AbiField) (*ABI, error) {
 
 			inputs, err := NewTupleTypeFromFields(field.Inputs)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			outputs, err := NewTupleTypeFromFields(field.Outputs)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			method := &Method{
 				Name:    field.Name,
@@ -130,7 +131,7 @@ func NewABIFromSlice(abi []compiler.AbiField) (*ABI, error) {
 		case "event":
 			input, err := NewTupleTypeFromFields(field.Inputs)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			event := &Event{
 				Name:      field.Name,
@@ -142,7 +143,7 @@ func NewABIFromSlice(abi []compiler.AbiField) (*ABI, error) {
 		case "error":
 			input, err := NewTupleTypeFromFields(field.Inputs)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			errObj := &Error{
 				Name:   field.Name,
