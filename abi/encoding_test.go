@@ -566,7 +566,6 @@ func TestEncodingArguments(t *testing.T) {
 
 func testEncodeDecode(t *testing.T, server *testutil.TestServer, tt *Type, input interface{}) error {
 	res1, err := Encode(input, tt)
-	fmt.Println(res1)
 	if err != nil {
 		return err
 	}
