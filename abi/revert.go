@@ -14,7 +14,7 @@ func UnpackRevertError(b []byte) (string, error) {
 
 	b = b[4:]
 	tt := MustNewType("tuple(string)")
-	vals, err := tt.Decode(b)
+	vals, err := tt.Decode(b, true)
 	if err != nil {
 		return "", err
 	}

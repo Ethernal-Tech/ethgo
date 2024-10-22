@@ -1,6 +1,7 @@
 package abi
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -17,7 +18,11 @@ var (
 )
 
 // Encode encodes a value
-func Encode(v interface{}, t *Type) ([]byte, error) {
+func Encode(v interface{}, t *Type, isFunctionArgument ...bool) ([]byte, error) {
+	if t.kind == KindTuple && len(isFunctionArgument) == 0 {
+		t.isRootTuple = true
+	}
+
 	return encode(reflect.ValueOf(v), t)
 }
 
@@ -159,6 +164,12 @@ func encodeTuple(v reflect.Value, t *Type) ([]byte, error) {
 		} else {
 			ret = append(ret, val...)
 		}
+	}
+
+	if t.isRootTuple && t.isDynamicType() {
+		// creates a 32 bytes offset to the head of the dynamic data
+		offset32 := append(bytes.Repeat([]byte{0}, 31), storageSlotSize)
+		ret = append(offset32, ret...)
 	}
 
 	return append(ret, tail...), nil

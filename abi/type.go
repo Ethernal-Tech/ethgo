@@ -100,12 +100,13 @@ type TupleElem struct {
 
 // Type is an ABI type
 type Type struct {
-	kind  Kind
-	size  int
-	elem  *Type
-	tuple []*TupleElem
-	t     reflect.Type
-	itype string
+	kind        Kind
+	size        int
+	elem        *Type
+	tuple       []*TupleElem
+	t           reflect.Type
+	itype       string
+	isRootTuple bool
 }
 
 func NewTupleType(inputs []*TupleElem) *Type {
@@ -138,8 +139,8 @@ func (t *Type) ParseLog(log *ethgo.Log) (map[string]interface{}, error) {
 }
 
 // Decode decodes an object using this type
-func (t *Type) Decode(input []byte) (interface{}, error) {
-	return Decode(t, input)
+func (t *Type) Decode(input []byte, isFunctionArgument ...any) (interface{}, error) {
+	return Decode(t, input, isFunctionArgument...)
 }
 
 // DecodeStruct decodes an object using this type to the out param
