@@ -335,6 +335,49 @@ func TestEncoding(t *testing.T) {
 	}
 }
 
+func TestEncoding2(t *testing.T) {
+	cases := []struct {
+		Type  string
+		Input interface{}
+	}{
+		{
+			"tuple(bytes a)[]",
+			[]map[string]interface{}{
+				{
+					"a": []byte{
+						0xff,
+						0xff,
+					},
+				},
+				{
+					"a": []byte{
+						0xff,
+						0xff,
+					},
+				},
+			},
+		},
+	}
+
+	server := testutil.NewTestServer(t)
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.Type, func(t *testing.T) {
+			t.Parallel()
+
+			tt, err := NewType(c.Type)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if err := testEncodeDecode(t, server, tt, c.Input); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func TestEncodingBestEffort(t *testing.T) {
 	strAddress := "0xdbb881a51CD4023E4400CEF3ef73046743f08da3"
 	ethAddress := ethgo.HexToAddress(strAddress)
@@ -566,6 +609,7 @@ func TestEncodingArguments(t *testing.T) {
 
 func testEncodeDecode(t *testing.T, server *testutil.TestServer, tt *Type, input interface{}) error {
 	res1, err := Encode(input, tt)
+	fmt.Println(res1)
 	if err != nil {
 		return err
 	}

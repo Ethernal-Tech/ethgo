@@ -28,7 +28,7 @@ func init() {
 		panic(err)
 	}
 	// solc folder does not exists
-	if err := DownloadSolidity("0.8.19", solcDir, false); err != nil {
+	if err := DownloadSolidity(SolcVersion, solcDir, false); err != nil {
 		panic(err)
 	}
 }
@@ -134,13 +134,13 @@ func TestDownloadSolidityCompiler(t *testing.T) {
 	}
 	defer os.RemoveAll(dst1)
 
-	if err := DownloadSolidity("0.8.19", dst1, true); err != nil {
+	if err := DownloadSolidity(SolcVersion, dst1, true); err != nil {
 		t.Fatal(err)
 	}
 	if existsSolidity(t, filepath.Join(dst1, "solidity")) {
 		t.Fatal("it should not exist")
 	}
-	if !existsSolidity(t, filepath.Join(dst1, "solidity-0.8.19")) {
+	if !existsSolidity(t, filepath.Join(dst1, "solidity-"+SolcVersion)) {
 		t.Fatal("it should exist")
 	}
 
@@ -150,13 +150,13 @@ func TestDownloadSolidityCompiler(t *testing.T) {
 	}
 	defer os.RemoveAll(dst2)
 
-	if err := DownloadSolidity("0.8.19", dst2, false); err != nil {
+	if err := DownloadSolidity(SolcVersion, dst2, false); err != nil {
 		t.Fatal(err)
 	}
 	if !existsSolidity(t, filepath.Join(dst2, "solidity")) {
 		t.Fatal("it should exist")
 	}
-	if existsSolidity(t, filepath.Join(dst2, "solidity-0.8.19")) {
+	if existsSolidity(t, filepath.Join(dst2, "solidity-"+SolcVersion)) {
 		t.Fatal("it should not exist")
 	}
 }

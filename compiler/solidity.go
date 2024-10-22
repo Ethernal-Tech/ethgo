@@ -13,6 +13,10 @@ import (
 	"strings"
 )
 
+const (
+	SolcVersion = "0.8.19"
+)
+
 type Output struct {
 	Contracts map[string]*Artifact
 	Sources   map[string]*Source

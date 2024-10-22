@@ -38,7 +38,7 @@ func (c *Contract) GetEvent(name string) *Event {
 
 // Print prints the contract
 func (c *Contract) Print() string {
-	str := "pragma solidity ^0.8.19;\n"
+	str := "pragma solidity ^" + compiler.SolcVersion + ";\n"
 	str += "\n"
 	str += "contract Sample {\n"
 

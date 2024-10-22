@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Ethernal-Tech/ethgo"
+	"github.com/Ethernal-Tech/ethgo/compiler"
 )
 
 func randomInt(min, max int) int {
@@ -192,7 +193,7 @@ func (g *generateContractImpl) run(t *Type) string {
 	}
 
 	contractTemplate :=
-		`pragma solidity ^0.8.19;
+		`pragma solidity ^%s;
 	
 	contract Sample {
 		// structs
@@ -204,6 +205,7 @@ func (g *generateContractImpl) run(t *Type) string {
 
 	contract := fmt.Sprintf(
 		contractTemplate,
+		compiler.SolcVersion,
 		strings.Join(g.structs, "\n"),
 		strings.Join(input, ","),
 		strings.Join(output, ","),
