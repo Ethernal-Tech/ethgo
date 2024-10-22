@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Ethernal-Tech/ethgo"
+	"github.com/Ethernal-Tech/ethgo/compiler"
 )
 
 // batch of predefined reflect types
@@ -115,10 +116,10 @@ func NewTupleType(inputs []*TupleElem) *Type {
 	}
 }
 
-func NewTupleTypeFromArgs(inputs []*ArgumentStr) (*Type, error) {
+func NewTupleTypeFromFields(inputs []*compiler.IOField) (*Type, error) {
 	elems := []*TupleElem{}
 	for _, i := range inputs {
-		typ, err := NewTypeFromArgument(i)
+		typ, err := NewTypeFromField(i)
 		if err != nil {
 			return nil, err
 		}
@@ -255,7 +256,7 @@ func (t *Type) isDynamicType() bool {
 	return t.kind == KindString || t.kind == KindBytes || t.kind == KindSlice || (t.kind == KindArray && t.elem.isDynamicType())
 }
 
-func parseType(arg *ArgumentStr) (string, error) {
+func parseType(arg *compiler.IOField) (string, error) {
 	if !strings.HasPrefix(arg.Type, "tuple") {
 		return arg.Type, nil
 	}
@@ -280,8 +281,8 @@ func parseType(arg *ArgumentStr) (string, error) {
 	return fmt.Sprintf("tuple(%s)%s", strings.Join(str, ","), strings.TrimPrefix(arg.Type, "tuple")), nil
 }
 
-// NewTypeFromArgument parses an abi type from an argument
-func NewTypeFromArgument(arg *ArgumentStr) (*Type, error) {
+// NewTypeFromField parses an abi type from an argument
+func NewTypeFromField(arg *compiler.IOField) (*Type, error) {
 	str, err := parseType(arg)
 	if err != nil {
 		return nil, err
@@ -299,7 +300,7 @@ func NewTypeFromArgument(arg *ArgumentStr) (*Type, error) {
 	return typ, nil
 }
 
-func fillIn(typ *Type, arg *ArgumentStr) error {
+func fillIn(typ *Type, arg *compiler.IOField) error {
 	typ.itype = arg.InternalType
 
 	if len(arg.Components) == 0 {

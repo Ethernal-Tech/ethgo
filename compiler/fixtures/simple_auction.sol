@@ -1,4 +1,5 @@
-pragma solidity >=0.4.22 <0.6.0;
+/* SPDX-License-Identifier: UNLICENSED */
+pragma solidity >=0.4.22 <0.8.29;
 
 contract SimpleAuction {
     // Parameters of the auction. Times are either
@@ -33,9 +34,9 @@ contract SimpleAuction {
     constructor(
         uint _biddingTime,
         address payable _beneficiary
-    ) public {
+    ) {
         beneficiary = _beneficiary;
-        auctionEndTime = now + _biddingTime;
+        auctionEndTime = block.timestamp + _biddingTime;
     }
 
     /// Bid on the auction with the value sent
@@ -52,7 +53,7 @@ contract SimpleAuction {
         // Revert the call if the bidding
         // period is over.
         require(
-            now <= auctionEndTime,
+            block.timestamp <= auctionEndTime,
             "Auction already ended."
         );
 
@@ -77,7 +78,7 @@ contract SimpleAuction {
     }
 
     /// Withdraw a bid that was overbid.
-    function withdraw() public returns (bool) {
+    function withdraw() public payable returns (bool) {
         uint amount = pendingReturns[msg.sender];
         if (amount > 0) {
             // It is important to set this to zero because the recipient
@@ -85,7 +86,7 @@ contract SimpleAuction {
             // before `send` returns.
             pendingReturns[msg.sender] = 0;
 
-            if (!msg.sender.send(amount)) {
+            if (!payable(msg.sender).send(amount)) {
                 // No need to call throw here, just reset the amount owing
                 pendingReturns[msg.sender] = amount;
                 return false;
@@ -111,7 +112,7 @@ contract SimpleAuction {
         // external contracts.
 
         // 1. Conditions
-        require(now >= auctionEndTime, "Auction not yet ended.");
+        require(block.timestamp >= auctionEndTime, "Auction not yet ended.");
         require(!ended, "auctionEnd has already been called.");
 
         // 2. Effects

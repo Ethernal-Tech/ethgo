@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/Ethernal-Tech/ethgo"
+	"github.com/Ethernal-Tech/ethgo/compiler"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -87,6 +88,80 @@ func NewABI(s string) (*ABI, error) {
 	return NewABIFromReader(bytes.NewReader([]byte(s)))
 }
 
+// NewABIFromSlice returns a parsed ABI struct from a slice of ABI fields that represent the contract
+func NewABIFromSlice(abi []compiler.AbiField) (*ABI, error) {
+	a := &ABI{}
+
+	for _, field := range abi {
+		switch field.Type {
+		case "constructor":
+			if a.Constructor != nil {
+				return nil, fmt.Errorf("multiple constructor declaration")
+			}
+			input, err := NewTupleTypeFromFields(field.Inputs)
+			if err != nil {
+				return nil, err
+			}
+			a.Constructor = &Method{
+				Inputs: input,
+			}
+
+		case "function", "":
+			c := field.Constant
+			if field.StateMutability == "view" || field.StateMutability == "pure" {
+				c = true
+			}
+
+			inputs, err := NewTupleTypeFromFields(field.Inputs)
+			if err != nil {
+				return nil, err
+			}
+			outputs, err := NewTupleTypeFromFields(field.Outputs)
+			if err != nil {
+				return nil, err
+			}
+			method := &Method{
+				Name:    field.Name,
+				Const:   c,
+				Inputs:  inputs,
+				Outputs: outputs,
+			}
+			a.addMethod(method)
+
+		case "event":
+			input, err := NewTupleTypeFromFields(field.Inputs)
+			if err != nil {
+				return nil, err
+			}
+			event := &Event{
+				Name:      field.Name,
+				Anonymous: field.Anonymous,
+				Inputs:    input,
+			}
+			a.addEvent(event)
+
+		case "error":
+			input, err := NewTupleTypeFromFields(field.Inputs)
+			if err != nil {
+				return nil, err
+			}
+			errObj := &Error{
+				Name:   field.Name,
+				Inputs: input,
+			}
+			a.addError(errObj)
+
+		case "fallback":
+		case "receive":
+			// do nothing
+
+		default:
+			return nil, fmt.Errorf("unknown field type '%s'", field.Type)
+		}
+	}
+	return a, nil
+}
+
 // MustNewABI returns a parsed ABI contract or panics if fails
 func MustNewABI(s string) *ABI {
 	a, err := NewABI(s)
@@ -114,8 +189,8 @@ func (a *ABI) UnmarshalJSON(data []byte) error {
 		Constant        bool
 		Anonymous       bool
 		StateMutability string
-		Inputs          []*ArgumentStr
-		Outputs         []*ArgumentStr
+		Inputs          []*compiler.IOField
+		Outputs         []*compiler.IOField
 	}
 
 	if err := json.Unmarshal(data, &fields); err != nil {
@@ -128,7 +203,7 @@ func (a *ABI) UnmarshalJSON(data []byte) error {
 			if a.Constructor != nil {
 				return fmt.Errorf("multiple constructor declaration")
 			}
-			input, err := NewTupleTypeFromArgs(field.Inputs)
+			input, err := NewTupleTypeFromFields(field.Inputs)
 			if err != nil {
 				panic(err)
 			}
@@ -142,11 +217,11 @@ func (a *ABI) UnmarshalJSON(data []byte) error {
 				c = true
 			}
 
-			inputs, err := NewTupleTypeFromArgs(field.Inputs)
+			inputs, err := NewTupleTypeFromFields(field.Inputs)
 			if err != nil {
 				panic(err)
 			}
-			outputs, err := NewTupleTypeFromArgs(field.Outputs)
+			outputs, err := NewTupleTypeFromFields(field.Outputs)
 			if err != nil {
 				panic(err)
 			}
@@ -159,7 +234,7 @@ func (a *ABI) UnmarshalJSON(data []byte) error {
 			a.addMethod(method)
 
 		case "event":
-			input, err := NewTupleTypeFromArgs(field.Inputs)
+			input, err := NewTupleTypeFromFields(field.Inputs)
 			if err != nil {
 				panic(err)
 			}
@@ -171,7 +246,7 @@ func (a *ABI) UnmarshalJSON(data []byte) error {
 			a.addEvent(event)
 
 		case "error":
-			input, err := NewTupleTypeFromArgs(field.Inputs)
+			input, err := NewTupleTypeFromFields(field.Inputs)
 			if err != nil {
 				panic(err)
 			}
@@ -406,15 +481,6 @@ func buildSignature(name string, typ *Type) string {
 		types[i] = strings.Replace(input.Elem.String(), "tuple", "", -1)
 	}
 	return fmt.Sprintf("%v(%v)", name, strings.Join(types, ","))
-}
-
-// ArgumentStr encodes a type object
-type ArgumentStr struct {
-	Name         string
-	Type         string
-	Indexed      bool
-	Components   []*ArgumentStr
-	InternalType string
 }
 
 var keccakPool = sync.Pool{
